@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bd show:*)",
+      "Bash(bd prime:*)",
+      "Bash(bd create:*)",
+      "Bash(bd ready:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  }
+}

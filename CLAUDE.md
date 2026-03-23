@@ -1,0 +1,7 @@
+# {{PROJECT_NAME}}
+
+Read AGENTS.md for all project instructions, architecture, and workflow guidelines.
+
+All agent instructions are maintained in AGENTS.md as the single source of truth across all AI coding tools (Claude Code, OpenCode, KiloCode, Codex, Cursor, and others).
+
+Use `bd prime` on session start for current task state. Query Open Brain via MCP for architectural context and decision history.

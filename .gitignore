@@ -1,0 +1,36 @@
+# Beads / Dolt
+.dolt/
+*.db
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+__pycache__/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Large binary results (add project-specific paths below)
+# results/screenshots/
