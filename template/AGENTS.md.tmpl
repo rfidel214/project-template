@@ -1,0 +1,313 @@
+# {{PROJECT_NAME}}
+
+> **This file is the single source of truth for all AI coding agents.** It is read natively by OpenCode, KiloCode, Codex, Cursor, Amp, Jules, and others. Claude Code reads CLAUDE.md, which points here. Do not duplicate instructions — edit this file only.
+
+## Project Overview
+
+{{PROJECT_DESCRIPTION}}
+
+**Current Phase:** {{PROJECT_PHASE}}
+
+---
+
+## Agent Memory Framework
+
+This project uses a dual-layer memory system. Follow this protocol on every session start:
+
+### Layer 1: Beads (Operational State)
+
+Beads (`bd`) is the task tracker. It knows what work exists, what's blocked, what's ready, and what you're working on.
+
+```bash
+# SESSION START — always run these first, in order
+bd dolt pull                      # Sync latest task state from DoltHub (REQUIRED before any work)
+bd prime                          # ~80 lines of current project context
+
+# FIND WORK
+bd ready                          # Tasks with no open blockers, sorted by priority
+bd show <id>                      # Full task details and audit trail
+
+# CLAIM AND WORK
+bd update <id> --claim            # Atomically claim (sets assignee + in_progress)
+bd update <id> --notes "..."      # Update status notes
+
+# CREATE TASKS
+bd create --title="Title" -t task -p 1 --description="Why this exists"
+
+# COMPLETE WORK
+bd close <id>                     # Mark done
+bd close <id1> <id2> ...          # Close multiple at once
+
+# SESSION END — always push
+git pull --rebase && git push && git status
+```
+
+**Rules:**
+- Never use `bd edit` — it opens an interactive editor agents can't use
+- P0 = critical, P1 = high, P2 = medium, P3 = low, P4 = deferred/backlog
+- Always push before ending a session — unpushed work breaks coordination
+
+### Micro-Capture Rule (MANDATORY — Context Loss Prevention)
+
+**Never work on more than one bead without capturing to OpenBrain. No exceptions.**
+
+The pattern:
+```
+1. Complete a bead → bd close <id>
+2. Immediately capture: capture_thought("[TASK <id>] [COMPLETED] what was done, what was learned, any errors encountered")
+3. Move to next bead
+```
+
+**Why this exists:** Context compaction can fire at any time without warning. If you batch all captures to session end, compaction wipes everything. Micro-capturing after each bead limits maximum context loss to the current in-progress bead only — minutes of work, not hours.
+
+**For conversational sessions** (decisions, architecture discussions, research — no beads involved):
+- Capture key decisions and findings immediately when they happen
+- User can say "capture that to OpenBrain" at any time
+- Don't wait for the session-capture-checklist
+
+**For error resolution:**
+- The moment you fix an error, capture it: `[TASK <id>] [ERROR] exact message, root cause, fix applied`
+- Do NOT wait until session end — the fix will be lost if compaction fires first
+
+### Layer 2: Open Brain (Knowledge & Decisions)
+
+Open Brain is the institutional knowledge layer. It stores architectural decisions, research findings, errors encountered, and all context that explains WHY things are the way they are.
+
+**Search before writing any code:**
+```
+search_thoughts("[TASK {taskId}]")       # Context for current task
+search_thoughts("{{PROJECT_NAME}} architecture")
+search_thoughts("SESSION ERRORS")        # Known errors + fixes
+search_thoughts("CURRENT BLOCKERS")
+```
+
+**Capture after significant decisions or milestones** so the next agent finds it here.
+
+### Lookup Order
+
+1. `bd dolt pull` → sync task state from DoltHub (always first)
+2. `bd prime` → current task state
+3. `bd ready` → pick work by priority
+4. Open Brain → architectural context, past errors, domain knowledge
+5. `docs/` files → detailed specifications (see Key Files below)
+
+---
+
+## Tech Stack
+
+{{TECH_STACK_TABLE}}
+
+---
+
+## Architecture
+
+{{ARCHITECTURE_SECTION}}
+
+---
+
+## Key Files
+
+| File | Purpose |
+|---|---|
+| `AGENTS.md` | This file — agent instructions and project context |
+| `CLAUDE.md` | Claude Code entrypoint — redirects here |
+{{KEY_FILES_TABLE}}
+
+---
+
+## Code Style Preferences
+
+{{CODE_STYLE_SECTION}}
+
+## Testing Policy
+
+{{TESTING_SECTION}}
+
+---
+
+## Important Decisions (Query Open Brain for Full Context)
+
+{{DECISIONS_SECTION}}
+
+---
+
+## What NOT to Do
+
+- Do not use GitHub Issues or any other issue tracker — Beads is canonical
+- Do not create markdown task lists — use `bd create` instead
+- Do not run `bd edit` — opens interactive editor, blocks the agent
+- Do not invoke the `update-config` skill to answer questions about settings — read settings files directly. Only invoke `update-config` when actually making changes.
+{{DONTS_SECTION}}
+
+---
+
+## Tool-Specific Setup & Enforcement
+
+### Hook Capabilities by Tool
+
+| Tool | Hooks | Pre-Compact Capture | Session Start Enforcement | Config Location |
+|------|-------|--------------------|----|-----------------|
+| Claude Code | Full (command, agent, prompt) | PreCompact hook captures to OpenBrain | SessionStart hook + system message | `~/.claude/settings.json` |
+| OpenCode CLI | Plugin system + oh-my-opencode | `session.compacting` event | Plugin hooks available | `~/.config/opencode/opencode.json` |
+| KiloCode CLI | Not yet | Must follow AGENTS.md manually | Must follow AGENTS.md manually | `~/.config/kilo/opencode.json` |
+| Codex CLI | AGENTS.md auto-loaded | Must follow AGENTS.md manually | AGENTS.md-based reminder only | `AGENTS.md` |
+
+### Beads Setup Commands
+
+```bash
+bd setup claude    # Claude Code — installs SessionStart/PreCompact hooks
+bd setup cursor    # Cursor IDE — creates .cursor/rules/beads.mdc
+bd setup aider     # Aider — creates .aider.conf.yml
+bd setup codex     # Codex CLI — creates/updates AGENTS.md snippet
+```
+
+### OpenCode / KiloCode Config
+
+Add to `~/.config/opencode/opencode.json` (or kilo equivalent):
+
+```json
+{
+  "instructions": ["AGENTS.md"],
+  "mcp": {
+    "open-brain": {
+      "type": "remote",
+      "url": "{{OPEN_BRAIN_MCP_URL}}",
+      "enabled": true
+    }
+  }
+}
+```
+
+---
+
+## Non-Interactive Shell Commands
+
+**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
+
+Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
+
+```bash
+cp -f source dest       # NOT: cp source dest
+mv -f source dest       # NOT: mv source dest
+rm -f file              # NOT: rm file
+rm -rf directory        # NOT: rm -r directory
+cp -rf source dest      # NOT: cp -r source dest
+```
+
+Other commands that may prompt:
+- `scp` — use `-o BatchMode=yes`
+- `ssh` — use `-o BatchMode=yes`
+- `apt-get` — use `-y` flag
+
+<!-- BEGIN BEADS INTEGRATION profile:full hash:d4f96305 -->
+## Issue Tracking with bd (beads)
+
+**IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
+
+### Why bd?
+
+- Dependency-aware: Track blockers and relationships between issues
+- Git-friendly: Dolt-powered version control with native sync
+- Agent-optimized: JSON output, ready work detection, discovered-from links
+- Prevents duplicate tracking systems and confusion
+
+### Quick Start
+
+**Check for ready work:**
+
+```bash
+bd ready --json
+```
+
+**Create new issues:**
+
+```bash
+bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
+bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
+```
+
+**Claim and update:**
+
+```bash
+bd update <id> --claim --json
+bd update bd-42 --priority 1 --json
+```
+
+**Complete work:**
+
+```bash
+bd close bd-42 --reason "Completed" --json
+```
+
+### Issue Types
+
+- `bug` - Something broken
+- `feature` - New functionality
+- `task` - Work item (tests, docs, refactoring)
+- `epic` - Large feature with subtasks
+- `chore` - Maintenance (dependencies, tooling)
+
+### Priorities
+
+- `0` - Critical (security, data loss, broken builds)
+- `1` - High (major features, important bugs)
+- `2` - Medium (default, nice-to-have)
+- `3` - Low (polish, optimization)
+- `4` - Backlog (future ideas)
+
+### Workflow for AI Agents
+
+1. **Check ready work**: `bd ready` shows unblocked issues
+2. **Claim your task atomically**: `bd update <id> --claim`
+3. **Work on it**: Implement, test, document
+4. **Discover new work?** Create linked issue:
+   - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
+5. **Complete**: `bd close <id> --reason "Done"`
+
+### Auto-Sync
+
+bd automatically syncs via Dolt:
+
+- Each write auto-commits to Dolt history
+- Use `bd dolt push`/`bd dolt pull` for remote sync
+- No manual export/import needed!
+
+### Important Rules
+
+- Use bd for ALL task tracking
+- Always use `--json` flag for programmatic use
+- Link discovered work with `discovered-from` dependencies
+- Check `bd ready` before asking "what should I work on?"
+- Do NOT create markdown TODO lists
+- Do NOT use external issue trackers
+- Do NOT duplicate tracking systems
+
+For more details, see README.md and docs/QUICKSTART.md.
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd dolt push
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+
+<!-- END BEADS INTEGRATION -->
