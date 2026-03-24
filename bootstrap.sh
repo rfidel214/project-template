@@ -424,6 +424,11 @@ setup_tools() {
     # OpenCode
     if $use_opencode; then
         link_skills "$OUTPUT_DIR/.opencode/skills" "OpenCode"
+        # Install context monitor plugin
+        mkdir -p "$OUTPUT_DIR/.opencode/plugins"
+        cp -f "$TEMPLATE_DIR/opencode-plugins/context-monitor.js" \
+              "$OUTPUT_DIR/.opencode/plugins/context-monitor.js"
+        ok "OpenCode: context-monitor plugin installed (.opencode/plugins/)"
     fi
 
     # KiloCode

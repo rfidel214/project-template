@@ -49,25 +49,33 @@ git pull --rebase && git push && git status
 
 ### Micro-Capture Rule (MANDATORY — Context Loss Prevention)
 
-**Never work on more than one bead without capturing to OpenBrain. No exceptions.**
+**Capture to OpenBrain continuously. Every significant action. No batching. No exceptions.**
 
-The pattern:
+Context compaction fires without warning. Every unbatched capture is a potential loss. The rule is simple: **if it would hurt to lose it, capture it now.**
+
+**Mandatory capture triggers — do these immediately, not at session end:**
+
+| Trigger | Capture format |
+|---------|---------------|
+| Fix an error | `[TASK <id>] [ERROR] exact message, root cause, fix applied` |
+| Complete a bead | `[TASK <id>] [COMPLETED] what was done, what was learned` |
+| Make an architectural decision | `[TASK <id>] [DECISION] what was decided and why` |
+| Discover something non-obvious | `[TASK <id>] [DISCOVERY] finding, impact, affected files` |
+| Hit a blocker | `[TASK <id>] [BLOCKER] what's blocked, workaround if any` |
+| Finish significant research | `[TASK <id>] [PROGRESS] what was researched, key findings` |
+
+**The bead completion pattern:**
 ```
 1. Complete a bead → bd close <id>
-2. Immediately capture: capture_thought("[TASK <id>] [COMPLETED] what was done, what was learned, any errors encountered")
-3. Move to next bead
+2. Immediately: capture_thought("[TASK <id>] [COMPLETED] ...")
+3. Only then: move to next bead
 ```
 
-**Why this exists:** Context compaction can fire at any time without warning. If you batch all captures to session end, compaction wipes everything. Micro-capturing after each bead limits maximum context loss to the current in-progress bead only — minutes of work, not hours.
-
-**For conversational sessions** (decisions, architecture discussions, research — no beads involved):
-- Capture key decisions and findings immediately when they happen
+**For conversational sessions** (decisions, research — no beads):
+- Capture key findings as they happen, not at the end
 - User can say "capture that to OpenBrain" at any time
-- Don't wait for the session-capture-checklist
 
-**For error resolution:**
-- The moment you fix an error, capture it: `[TASK <id>] [ERROR] exact message, root cause, fix applied`
-- Do NOT wait until session end — the fix will be lost if compaction fires first
+**Why this matters:** Compaction can fire mid-sentence. Micro-capturing after each trigger limits maximum loss to the current in-progress action — seconds of work, not hours.
 
 ### Layer 2: Open Brain (Knowledge & Decisions)
 
