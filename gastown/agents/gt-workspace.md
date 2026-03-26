@@ -1,51 +1,50 @@
 ---
 
-## OpenBrain Capture Protocol (Coordinator Agents Only)
+## OpenBrain Capture Protocol — Tiered Write Policy
 
-OpenBrain (`capture_thought` MCP tool) is the shared memory layer across all sessions.
-**Coordinator agents MUST capture to OpenBrain** at key lifecycle moments.
-
-> **Polecats do NOT capture to OpenBrain.** Polecats are execution units — they code,
-> commit, and submit to Refinery. Context capture is the responsibility of Mayor,
-> Refinery, Deacon, and Witness. This is by design: coordinators have the full
-> picture; polecats only see their own bead.
-
-**Who captures:**
-
-| Agent | Captures | Does NOT capture |
-|-------|----------|-----------------|
-| Mayor | Convoy decisions, escalations, handoffs | — |
-| Refinery | Merge results, FIX_NEEDED reasons | — |
-| Deacon | Health events, cross-rig escalations | — |
-| Witness | Stuck agent recoveries | — |
-| Flint (crew) | When doing direct user collaboration | — |
-| Polecats | — | Everything — not their job |
+OpenBrain (`capture_thought` / `search_thoughts` MCP tools) is the shared knowledge layer
+across all agents and sessions. Write access is role-gated — not all agents capture.
 
 OpenBrain MCP is configured in `~/.config/opencode/config.json` (server: `open-brain`).
-Call it with: `capture_thought("<text>")`
+Claude Code agents use the MCP tool natively. OpenCode agents use the remote MCP URL.
 
-### Required capture triggers (coordinators)
+### Who captures what
 
-| Event | Category tag | Who |
-|-------|-------------|-----|
-| Key decision made | `[DECISION]` | Mayor, Refinery |
-| Error hit and fixed | `[ERROR]` | Any coordinator |
-| Non-obvious discovery | `[DISCOVERY]` | Any coordinator |
-| Significant work completed | `[PROGRESS]` | Refinery, Mayor |
-| Blocker encountered | `[BLOCKER]` | Any coordinator |
-| Session ending | `[HANDOFF]` | Mayor |
+| Role | Write Access | Trigger | Do NOT capture |
+|------|-------------|---------|----------------|
+| **Mayor** | Full | Convoy formation, escalation received, session handoff | Routine status pings |
+| **Flint (crew)** | Full | Design decisions, discoveries, session end | -- |
+| **Refinery** | Conditional | FIX_NEEDED events ONLY (merge failures) | Routine successful merges |
+| **Deacon** | Conditional | Same failure type 3+ times in one patrol session | Individual transient events |
+| **Witness** | Read only | Query known failure patterns at patrol start | Never writes |
+| **Polecats** | None | Exception: `gt escalate` auto-captures via Mayor | Everything else |
+| **Dogs** | None | Infrastructure workers -- no synthesis capability | Everything |
 
-### Format
+### Capture format
 
 ```
 capture_thought("[TASK <id>] [CATEGORY] YYYY-MM-DD - <summary>")
 ```
 
 Use `[TASK gastown]` for Mayor/coordinator-level decisions.
-Use `[TASK <bead-id>]` for bead-specific outcomes (Refinery merge/reject).
+Use `[TASK <bead-id>]` for bead-specific work (e.g. `[TASK hq-cv-v3u4i]`).
 
-### Why OpenBrain over beads notes
+Category tags: `[DECISION]` `[ERROR]` `[DISCOVERY]` `[PROGRESS]` `[BLOCKER]` `[HANDOFF]`
 
-Beads notes are short status strings. OpenBrain holds full structured reasoning:
-error context, decision rationale, architectural discoveries, failure analysis.
-Both matter. Neither replaces the other. Beads = what. OpenBrain = why + how.
+### Capture ownership
+
+- **Polecats** are execution units. They code, commit, and call `gt done`. Context capture
+  is handled by coordinator agents who have full system visibility.
+- **Do NOT capture to OpenBrain** from polecat sessions — the Mayor synthesizes convoy
+  outcomes, Refinery captures merge failures, Deacon captures systemic patterns.
+- The one exception: `gt escalate` sends the escalation to Mayor, who captures it.
+
+### Rationale
+
+Polecats lack project-level context to distinguish signal from noise. Their execution
+traces pollute the semantic space. Knowledge flows upward: Refinery captures merge
+failures, Deacon captures systemic patterns, Mayor synthesizes convoy outcomes.
+Witness queries OpenBrain at patrol start to make smarter recovery decisions -- it reads
+known failure patterns without writing new noise.
+
+Beads = what (task state). OpenBrain = why + how (reasoning, patterns, decisions).

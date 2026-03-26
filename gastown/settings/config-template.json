@@ -1,0 +1,23 @@
+{
+  "type": "town-settings",
+  "version": 1,
+  "default_agent": "opencode",
+  "role_agents": {
+    "mayor": "{{MAYOR_AGENT}}",
+    "refinery": "{{REFINERY_AGENT}}",
+    "witness": "{{WITNESS_AGENT}}"
+  },
+  "crew_agents": {
+    "{{CREW_NAME}}": "{{CREW_AGENT}}"
+  },
+  "agents": {
+    "{{CLAUDE_AGENT_ID}}": {
+      "command": "claude",
+      "args": ["--dangerously-skip-permissions", "--model", "{{CLAUDE_MODEL_ALIAS}}"]
+    },
+    "{{OPENCODE_BASE_AGENT_ID}}": {
+      "command": "opencode",
+      "args": ["-m", "{{OPENCODE_BASE_MODEL}}"]
+    }
+  }
+}
