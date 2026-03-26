@@ -1,0 +1,60 @@
+
+---
+
+## Gas Town Multi-Agent Orchestration
+
+This project uses **Gas Town** (`gt`) for parallel multi-agent development on Linux.
+Gas Town coordinates polecats (worker agents) through Mayor, Refinery, Witness, and Deacon.
+
+**Gas Town HQ:** `~/gt/`
+**Rig:** `~/gt/{{REPO_SLUG}}/`
+**Polecat worktrees:** `~/gt/{{REPO_SLUG}}/polecats/<name>/{{REPO_SLUG}}/`
+
+### Polecat Session Flow
+
+```bash
+gt prime          # Load role context + formula checklist (run first, every session)
+gt mol status     # Check your hooked work
+bd show <id>      # Full bead details
+```
+
+Work only inside your worktree (`~/gt/{{REPO_SLUG}}/polecats/<name>/{{REPO_SLUG}}/`).
+Never edit files in the rig root — it has no `.git`, edits are lost.
+
+**Session end (MANDATORY):**
+```bash
+git status && git add <files> && git commit -m "<id>: description" && git push
+bd dolt push
+gt done           # Submit to Refinery merge queue — MANDATORY, replaces manual push
+```
+
+`gt done` verifies clean state, submits to Refinery, exits. Never push to main directly.
+
+### OpenBrain Capture (Polecats)
+
+The `mol-polecat-work` formula has a mandatory `capture-findings` gate step between
+`commit-changes` and `pre-verify`. Polecats cannot submit to the merge queue without:
+
+1. Calling `capture_thought("[TASK {{issue}}] [COMPLETED] ...")` with a structured summary
+2. Updating bead notes: `bd update {{issue}} --notes "COMPLETED: <summary>"`
+
+See formula step for exact format. OpenBrain MCP is pre-configured in opencode config.
+
+### Communication Hygiene
+
+- **Default:** `gt nudge <target> "msg"` — ephemeral, zero Dolt overhead
+- **Escalate blockers:** `gt escalate "description" -s HIGH` — routes to Mayor
+- **Persistent handoffs:** `gt mail send` — only when message must survive session death
+- **Never mail "I'm done"** — `gt done` notifies Refinery automatically
+- **Never close your bead** — Refinery closes it after merge
+
+### Key Commands
+
+```bash
+gt prime              # Load full context + formula checklist
+gt mol status         # Check hooked work
+gt done               # Submit to merge queue
+gt escalate "desc"    # Escalate blockers
+gt mail inbox         # Check messages
+gt nudge <target> "msg"  # Ephemeral message (prefer over mail)
+```

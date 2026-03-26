@@ -102,6 +102,11 @@ echo ""
 read -rp "OpenBrain MCP URL (or 'skip'): " OPENBRAIN_URL
 OPENBRAIN_URL="${OPENBRAIN_URL:-skip}"
 
+echo ""
+info "Use Gas Town for multi-agent orchestration? (requires Linux VM with gt installed)"
+read -rp "Enable Gas Town? (y/N): " GT_CHOICE
+GT_CHOICE="${GT_CHOICE:-N}"
+
 # --- Determine output directory ---
 
 read -rp "Output directory [./$REPO_SLUG]: " OUTPUT_DIR
@@ -294,9 +299,17 @@ EOF
         ;;
     esac
 
+    # Load Gas Town section if enabled
+    local gastown_file="$TEMPLATE_DIR/../gastown/agents/gt-workspace.md"
+    local USE_GASTOWN="false"
+    if [[ "$GT_CHOICE" == "y" || "$GT_CHOICE" == "Y" ]]; then
+        USE_GASTOWN="true"
+    fi
+
     # Use Python for reliable multi-line replacements (available on all platforms)
     # Convert Git Bash paths to Windows paths if needed
     local py_agents_file="$agents_file"
+    local py_gastown_file="$gastown_file"
     local py_tech_file="$tech_stack_file"
     local py_style_file="$code_style_file"
     local py_test_file="$testing_file"
@@ -305,6 +318,7 @@ EOF
         py_tech_file=$(cygpath -w "$tech_stack_file" 2>/dev/null || echo "$tech_stack_file")
         py_style_file=$(cygpath -w "$code_style_file" 2>/dev/null || echo "$code_style_file")
         py_test_file=$(cygpath -w "$testing_file" 2>/dev/null || echo "$testing_file")
+        py_gastown_file=$(cygpath -w "$gastown_file" 2>/dev/null || echo "$gastown_file")
     fi
 
     if command -v python3 &>/dev/null; then
@@ -322,6 +336,7 @@ replacements = {
     "{{TESTING_SECTION}}": open(r"$py_test_file").read().strip(),
     "{{DECISIONS_SECTION}}": "_No decisions logged yet. Use Open Brain to capture decisions as they're made._",
     "{{DONTS_SECTION}}": "",
+    "{{GASTOWN_SECTION}}": open(r"$py_gastown_file").read().strip() if "$USE_GASTOWN" == "true" else "",
 }
 
 for placeholder, replacement in replacements.items():
@@ -340,6 +355,7 @@ PYEOF
             -e "s|{{TESTING_SECTION}}|_Add testing policy here_|" \
             -e "s|{{DECISIONS_SECTION}}|_No decisions logged yet._|" \
             -e "s|{{DONTS_SECTION}}||" \
+            -e "s|{{GASTOWN_SECTION}}||" \
             "$agents_file"
         warn "python3 not found — AGENTS.md has simplified defaults. Edit manually."
     fi
@@ -506,5 +522,19 @@ echo ""
 info "Global hooks (SessionStart, PreCompact) must be configured separately."
 echo "  For Claude Code: run 'bd setup claude' in the new project."
 echo "  For OpenCode: add plugin hooks per AGENTS.md instructions."
+
+# Gas Town infrastructure setup (optional)
+if [[ "$GT_CHOICE" == "y" || "$GT_CHOICE" == "Y" ]]; then
+    echo ""
+    info "Gas Town infrastructure setup (patches ~/gt/ on Linux VM)"
+    read -rp "Set up ~/gt/ now? (y/N): " GT_INFRA_NOW
+    if [[ "$GT_INFRA_NOW" == "y" || "$GT_INFRA_NOW" == "Y" ]]; then
+        bash "$SCRIPT_DIR/gastown/setup.sh"
+    else
+        echo "  Run later: bash $(realpath "$SCRIPT_DIR/gastown/setup.sh")"
+        echo "  Or if on Windows: scp gastown/setup.sh <linux-vm>:/tmp/ && ssh <vm> 'bash /tmp/setup.sh'"
+    fi
+fi
+
 echo ""
 ok "Done!"
