@@ -19,9 +19,8 @@ MoldKit uses a dual-layer memory system. Follow this protocol on every session s
 Beads (`bd`) is the task tracker. It knows what work exists, what's blocked, what's ready, and what you're working on.
 
 ```bash
-# SESSION START — always run these first, in order
-bd dolt pull                      # Sync latest task state from DoltHub (REQUIRED before any work)
-bd prime                          # ~80 lines of current project context
+# SESSION START — always run first
+bd prime                          # ~80 lines of current project context (beads is local, no remote pull needed)
 
 # FIND WORK
 bd ready --json                   # Tasks with no open blockers, sorted by priority
@@ -69,11 +68,10 @@ Open Brain is the institutional knowledge layer. It stores architectural decisio
 
 ### Lookup Order
 
-1. `bd dolt pull` → sync task state from DoltHub (always first)
-2. `bd prime` → current task state
-3. `bd ready` → pick work by priority
-4. Open Brain → architectural context and domain knowledge when needed
-5. PRD files → detailed specifications (see Key Files below)
+1. `bd prime` → current task state (beads is local, no remote sync needed)
+2. `bd ready` → pick work by priority
+3. Open Brain → architectural context and domain knowledge when needed
+4. PRD files → detailed specifications (see Key Files below)
 
 ## Tech Stack
 
@@ -305,7 +303,7 @@ MoldKit uses a closed-loop context system. Both ends are mandatory — breaking 
 
 **Run BEFORE writing any code.** In Claude Code: `/session-start-checklist`. In other agents: follow these steps manually.
 
-1. `bd dolt pull && bd prime` — sync task state, identify your task
+1. `bd prime` — load current task state (beads is local, no remote pull needed)
 2. Search OpenBrain for task context (MANDATORY, not optional):
    ```
    search_thoughts("[TASK {taskId}]")        # All captures for this task
@@ -336,7 +334,7 @@ Every OpenBrain capture **MUST** be tagged with the beads task ID:
 **Then push everything:**
 ```bash
 bd update {taskId} --notes "COMPLETED: X. IN PROGRESS: Y. NEXT: Z. OpenBrain: search [TASK {id}]"
-git pull --rebase && git push && bd dolt push
+git pull --rebase && git push && bd backup export-git
 ```
 
 #### Required Reading by Task Area
@@ -397,7 +395,7 @@ This is standard git — works in any agent, any tool, any platform. No tool-spe
 ### Why bd?
 
 - Dependency-aware: Track blockers and relationships between issues
-- Git-friendly: Dolt-powered version control with native sync
+- Git-friendly: Dolt-powered local database with Git-backed backup
 - Agent-optimized: JSON output, ready work detection, discovered-from links
 - Prevents duplicate tracking systems and confusion
 
@@ -454,13 +452,13 @@ bd close bd-42 --reason "Completed" --json
    - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
 5. **Complete**: `bd close <id> --reason "Done"`
 
-### Auto-Sync
+### Local Storage & Backup
 
-bd automatically syncs via Dolt:
+Beads data is stored in a local Dolt database:
 
 - Each write auto-commits to Dolt history
-- Use `bd dolt push`/`bd dolt pull` for remote sync
-- No manual export/import needed!
+- Use `bd backup export-git` to back up beads to a `beads-backup` branch on GitHub
+- No DoltHub account needed — backup is Git-native
 
 ### Important Rules
 
@@ -496,7 +494,7 @@ For more details, see README.md and docs/QUICKSTART.md.
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd dolt push
+   bd backup export-git
    git push
    git status  # MUST show "up to date with origin"
    ```

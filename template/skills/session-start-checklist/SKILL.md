@@ -70,8 +70,7 @@ Do not skip this — these files represent context that could not be saved previ
 ### Step 1: Sync Task State
 
 ```bash
-bd dolt pull          # Sync latest from DoltHub
-bd prime              # Current project context (~80 lines)
+bd prime              # Current project context (~80 lines, beads is local)
 ```
 
 Read the output. Identify:
@@ -170,7 +169,7 @@ The notes field should contain OpenBrain search keywords left by the previous ag
 
 This checklist is tool-agnostic. The core protocol is:
 
-1. `bd dolt pull && bd prime` (shell command)
+1. `bd prime` (shell command — beads is local, no remote pull needed)
 2. Search OpenBrain via MCP: `search_thoughts("[TASK {id}]")`
 3. Read reference files (any file reader)
 4. Check task state via bd (shell command)

@@ -6,7 +6,7 @@ Bootstrap new repos with AI agent workflow infrastructure. Creates a complete de
 
 - **AGENTS.md** — single source of truth for all AI coding tools
 - **Session skills** — start-of-session context consumption + end-of-session capture checklists
-- **Beads integration** — `bd` task tracking with Dolt-backed dependency graphs
+- **Beads integration** — `bd` task tracking with local Dolt database, Git-backed backup
 - **OpenBrain memory** — persistent knowledge layer across sessions and agents
 - **Cross-tool support** — native skill/rule files for Claude Code, OpenCode, KiloCode, and Codex CLI
 
@@ -74,12 +74,12 @@ Session Start                    Session End
      ▼                                ▼
 /session-start-checklist     /session-capture-checklist
      │                                │
-     ├── bd dolt pull                 ├── Capture errors to OpenBrain
-     ├── bd prime                     ├── Capture discoveries
-     ├── Search OpenBrain             ├── Write handoff note
-     ├── Read reference files         ├── Update beads
-     └── Set up context monitor       ├── git push
-                                      └── bd dolt push
+     ├── bd prime                     ├── Capture errors to OpenBrain
+     ├── Search OpenBrain             ├── Capture discoveries
+     ├── Read reference files         ├── Write handoff note
+     └── Set up context monitor       ├── Update beads
+                                      ├── git push
+                                      └── bd backup export-git
 ```
 
 ## Cross-Platform

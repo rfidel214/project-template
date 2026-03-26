@@ -21,9 +21,8 @@ This project uses a dual-layer memory system. Follow this protocol on every sess
 Beads (`bd`) is the task tracker. It knows what work exists, what's blocked, what's ready, and what you're working on.
 
 ```bash
-# SESSION START — always run these first, in order
-bd dolt pull                      # Sync latest task state from DoltHub (REQUIRED before any work)
-bd prime                          # ~80 lines of current project context
+# SESSION START — always run first
+bd prime                          # ~80 lines of current project context (beads is local, no remote pull needed)
 
 # FIND WORK
 bd ready --json                   # Tasks with no open blockers, sorted by priority
@@ -44,8 +43,9 @@ bd dep tree <id>                  # Show dependency tree
 # COMPLETE WORK
 bd close <id> --reason "Done: description" --json
 
-# SESSION END — always push
+# SESSION END — always push code and back up beads
 git pull --rebase && git push && git status
+bd backup export-git              # Back up beads to beads-backup branch on GitHub
 ```
 
 **Rules:**
@@ -53,6 +53,7 @@ git pull --rebase && git push && git status
 - Never use `bd edit` — it opens an interactive editor agents can't use
 - P0 = critical, P1 = high, P2 = medium, P3 = low, P4 = deferred
 - Always push before ending a session — unpushed work breaks coordination
+- Beads data is local (Dolt database on this machine). Backup is via `bd backup export-git` which pushes JSONL to a `beads-backup` branch on GitHub. No DoltHub account needed.
 
 ### Layer 2: Open Brain (Knowledge & Decisions)
 
@@ -70,11 +71,10 @@ Open Brain is the institutional knowledge layer. It stores architectural decisio
 
 ### Lookup Order
 
-1. `bd dolt pull` → sync task state from DoltHub (always first)
-2. `bd prime` → current task state
-3. `bd ready` → pick work by priority
-4. Open Brain → architectural context and domain knowledge when needed
-5. PRD / spec files → detailed specifications (see Key Files below)
+1. `bd prime` → current task state (beads is local, no remote sync needed)
+2. `bd ready` → pick work by priority
+3. Open Brain → architectural context and domain knowledge when needed
+4. PRD / spec files → detailed specifications (see Key Files below)
 
 ---
 

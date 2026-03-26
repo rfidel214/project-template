@@ -24,7 +24,7 @@ Never edit files in the rig root — it has no `.git`, edits are lost.
 **Session end (MANDATORY):**
 ```bash
 git status && git add <files> && git commit -m "<id>: description" && git push
-bd dolt push
+bd backup export-git
 gt done           # Submit to Refinery merge queue — MANDATORY, replaces manual push
 ```
 

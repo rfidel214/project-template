@@ -31,9 +31,6 @@ gh repo create your-repo-name --source=. --push
 ## Step 4: Configure Tools
 
 ```bash
-# Beads — set up DoltHub remote
-bd dolt remote add origin <your-dolthub-remote>
-
 # Claude Code — install hooks
 bd setup claude
 
@@ -47,7 +44,7 @@ Open your AI coding tool and say:
 > "Run /session-start-checklist"
 
 Or if the tool doesn't support skills, tell it:
-> "Read AGENTS.md, run bd dolt pull && bd prime, search OpenBrain for this project"
+> "Read AGENTS.md, run bd prime, search OpenBrain for this project"
 
 ---
 

@@ -225,7 +225,7 @@ bd close {taskId} --reason "Done: description" --json    # If task is complete
 
 ```bash
 git pull --rebase && git push
-bd dolt push
+bd backup export-git              # Back up beads to beads-backup branch on GitHub
 git status    # Must show "up to date with origin"
 ```
 
@@ -277,7 +277,7 @@ Finding: ...
 git add docs/session-capture-{date}.md
 git commit -m "Session capture fallback {date} — pending OpenBrain import"
 git push
-bd dolt push
+bd backup export-git
 ```
 
 The `/session-start-checklist` Step 0 will detect this file at the next session start, import it to OpenBrain when the token is fresh, and delete it.
@@ -303,13 +303,13 @@ Before ending the session, verify:
 - [ ] Handoff note captured with `[TASK {id}] [HANDOFF]` tag
 - [ ] Beads task updated with notes
 - [ ] Code committed and pushed
-- [ ] `bd dolt push` completed
+- [ ] `bd backup export-git` completed
 
 **If OpenBrain was unavailable (Path B fallback):**
 - [ ] `docs/session-capture-{date}.md` written with all captures in structured format
 - [ ] Fallback file committed and pushed to git
 - [ ] Beads task updated with notes (references fallback file)
-- [ ] `bd dolt push` completed
+- [ ] `bd backup export-git` completed
 - [ ] Context is NOT lost — it will be imported next session via `/session-start-checklist` Step 0
 
 ---
@@ -322,7 +322,7 @@ This checklist is tool-agnostic. The core protocol:
 2. Capture to OpenBrain via MCP: `capture_thought("[TASK {id}] [CATEGORY] ...")`
 3. Update beads: `bd update {id} --notes "..."`
 4. Push code: `git push`
-5. Push beads: `bd dolt push`
+5. Back up beads: `bd backup export-git`
 
 OpenBrain MCP is available from any tool that supports MCP servers. See AGENTS.md for connection details per tool.
 

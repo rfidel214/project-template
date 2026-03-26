@@ -126,7 +126,7 @@ capture_thought("[PROJECT {{PROJECT_NAME}}] [DISCOVERY] Project initialized from
 git rm SETUP.md
 git commit -m "chore: complete template setup, remove SETUP.md"
 git push
-bd dolt push
+bd backup export-git
 ```
 
 ---
