@@ -58,3 +58,11 @@ gt escalate "desc"    # Escalate blockers
 gt mail inbox         # Check messages
 gt nudge <target> "msg"  # Ephemeral message (prefer over mail)
 ```
+
+### gstack Integration
+
+Gas Town agents use gstack skills based on their role:
+- **Mayor** uses `/plan-eng-review` before dispatching convoys
+- **Refinery** gates merges with `/review` and `/cso` (security audit)
+- **Flint (crew)** uses full sprint cycle for one-off tasks
+- **Polecats do NOT use gstack** — they are execution units

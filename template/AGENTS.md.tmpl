@@ -149,6 +149,38 @@ search_thoughts("CURRENT BLOCKERS")
 
 {{GASTOWN_SECTION}}
 
+## Development Process (gstack)
+
+This project uses [gstack](https://github.com/garrytan/gstack) skills for structured development. Skills are available as slash commands in Claude Code.
+
+### New Feature Workflow
+
+1. `/office-hours` — validate the idea, challenge assumptions, write design doc (Architect)
+2. `/plan-ceo-review` — scope the feature, find the 10-star version (Architect)
+3. `/plan-eng-review` — architecture, diagrams, test plan (Mayor or Architect)
+4. Create beads from the plan
+5. Polecats execute beads (NO gstack skills — polecats are execution units only)
+6. `/review` + `/cso` gate merges (Refinery)
+7. `/document-release` after shipping
+8. `/retro` at end of sprint
+
+### Role-Based Skill Access
+
+| Role | gstack Skills | Purpose |
+|------|--------------|---------|
+| Architect (human + Claude) | /office-hours, /plan-ceo-review, /autoplan | Idea validation, feature scoping |
+| Mayor | /plan-eng-review | Architecture review before dispatching |
+| Flint (crew) | Full sprint cycle | One-off tasks get complete process |
+| Refinery | /review, /cso | Code review + security gate |
+| Polecats | NONE | Execution units only |
+
+### Builder Ethos
+
+- **Boil the Lake** — AI makes completeness near-zero cost. Always do the complete thing. Never skip tests or edge cases.
+- **Search Before Building** — Check existing solutions (crates, patterns, conventions) before writing custom code.
+
+---
+
 ## Tool-Specific Setup & Enforcement
 
 ### Hook Capabilities by Tool

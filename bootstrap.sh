@@ -395,6 +395,27 @@ setup_tools() {
         ok "Claude Code: .claude/skills/ and settings.local.json created"
     fi
 
+    # gstack — virtual engineering team skills (optional)
+    if $use_claude; then
+        echo ""
+        info "Install gstack (Garry Tan's software factory)? Adds /office-hours, /review, /qa, /cso, and 24 more skills."
+        read -rp "Install gstack? (Y/n): " GSTACK_CHOICE
+        GSTACK_CHOICE="${GSTACK_CHOICE:-Y}"
+        if [[ "$GSTACK_CHOICE" == "y" || "$GSTACK_CHOICE" == "Y" ]]; then
+            if command -v bun &>/dev/null; then
+                git clone https://github.com/garrytan/gstack.git "$OUTPUT_DIR/.claude/skills/gstack" 2>/dev/null
+                cd "$OUTPUT_DIR/.claude/skills/gstack" && ./setup 2>/dev/null
+                cd "$OUTPUT_DIR"
+                ok "gstack installed (28 skills)"
+            else
+                warn "bun not found — gstack requires Bun v1.0+. Install bun (bun.sh) then run:"
+                echo "  cd $OUTPUT_DIR/.claude/skills/gstack && ./setup"
+                git clone https://github.com/garrytan/gstack.git "$OUTPUT_DIR/.claude/skills/gstack" 2>/dev/null
+                ok "gstack cloned (run setup after installing bun)"
+            fi
+        fi
+    fi
+
     # Determine symlink or copy strategy
     local link_cmd="copy"
     if can_symlink; then
