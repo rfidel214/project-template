@@ -168,10 +168,27 @@ Run slings in parallel — do not wait for one to complete before starting the n
 gt polecat list <rig>
 ```
 
+**If any sling failed:**
+
+1. Retry once after a 10-second pause:
+   ```bash
+   sleep 10 && gt polecat sling <rig> <bead-id> <polecat-name>
+   ```
+2. If the retry also fails, escalate to overseer and do NOT leave the bead assigned to a dead session:
+   ```bash
+   bd update <bead-id> --status=open --assignee=""
+   gt mail send <rig>/overseer -s "SLING_FAILED <bead-id>" -m "Polecat: <polecat-name>
+   Bead: <bead-id>
+   Attempts: 2
+   Error: <error output>
+   Note: Bead reset to open/unassigned. Manual intervention required."
+   ```
+3. Continue the wave with the remaining successful slings — one failed sling should not block others.
+
 **Capture to OpenBrain (MANDATORY if any beads were slid):**
 
 ```
-capture_thought("[TASK gastown] [DECISION] YYYY-MM-DD - Wave slid: <bead-id> to <polecat>, <bead-id> to <polecat>. Rationale: <why this ordering, why these polecats>. Remaining ready: <count>. Polecats idle after sling: <count>")
+capture_thought("[TASK gastown] [DECISION] YYYY-MM-DD - Wave slid: <bead-id> to <polecat>, <bead-id> to <polecat>. Rationale: <why this ordering, why these polecats>. Remaining ready: <count>. Polecats idle after sling: <count>. Failed slings: <count or none>")
 ```
 
 Track: slings_completed, slings_failed"""

@@ -71,11 +71,11 @@ PATCH_ARGS="--gt-dir $GT_DIR"
 [ -n "$RIG" ] && PATCH_ARGS="$PATCH_ARGS --rig $RIG"
 python3 "$SCRIPT_DIR/scripts/patch-agents.py" $PATCH_ARGS
 
-# Patch mol-polecat-work formula
-echo "Patching mol-polecat-work formula..."
-python3 "$SCRIPT_DIR/scripts/patch-formula.py" --gt-dir "$GT_DIR"
+# Patch mol-refinery-patrol formula (inject BEAD_MERGED Mayor notification)
+echo "Patching mol-refinery-patrol formula..."
+python3 "$SCRIPT_DIR/scripts/patch-refinery.py" --gt-dir "$GT_DIR"
 
-# Install custom formulas (override Gas Town defaults with project-template versions)
+# Install custom formulas (new formulas not in Gas Town defaults)
 FORMULAS_DIR="$SCRIPT_DIR/formulas"
 if [ -d "$FORMULAS_DIR" ]; then
     FORMULA_COUNT=0
@@ -83,8 +83,13 @@ if [ -d "$FORMULAS_DIR" ]; then
         [ -f "$formula" ] || continue
         fname="$(basename "$formula")"
         dest="$GT_DIR/.beads/formulas/$fname"
-        cp "$formula" "$dest"
-        echo "OK   formula installed: $fname"
+        if [ -f "$dest" ]; then
+            cp "$formula" "$dest"
+            echo "OK   formula updated: $fname (overwrote existing)"
+        else
+            cp "$formula" "$dest"
+            echo "OK   formula installed: $fname (new)"
+        fi
         FORMULA_COUNT=$((FORMULA_COUNT + 1))
     done
     if [ "$FORMULA_COUNT" -eq 0 ]; then
