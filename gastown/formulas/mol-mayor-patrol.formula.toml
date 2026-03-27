@@ -1,0 +1,269 @@
+description = """
+Convoy management patrol loop.
+
+The Mayor is the mission commander. You assign beads to polecats, form convoys,
+and drive Phase delivery forward. You do NOT write code — you direct execution.
+
+## Patrol Triggers
+
+The Mayor patrol fires on two triggers:
+
+1. **BEAD_MERGED mail** from Refinery — a bead landed, dependencies may now be unblocked
+2. **await-signal timeout** — periodic check even if no mail arrives
+
+Both paths lead to the same check: `bd ready`. If there is unblocked work and idle
+polecats, sling it. That is the entire job.
+
+## Convoy Philosophy
+
+- Sling in waves: assign all unblocked beads simultaneously to maximize parallel throughput
+- Match bead complexity to polecat capability (simple beads to any polecat, complex to proven ones)
+- Do not wait for a full wave — if one bead unblocks, sling it immediately
+- Capture every convoy decision to OpenBrain (rationale is invisible otherwise)
+
+## Polecat Assignment
+
+```bash
+gt polecat list <rig>                                   # See all polecats and status
+gt polecat sling <rig> <bead-id> <polecat-name>         # Assign bead to polecat
+```
+
+Idle polecats should always have work. If polecats are idle and bd ready shows
+available beads, that is a gap you must close immediately.
+
+## CRITICAL: Read Step Instructions Before Acting
+
+Before executing ANY step, read the description in full."""
+
+formula = "mol-mayor-patrol"
+version = 1
+
+[[steps]]
+id = "inbox-check"
+title = "Check mayor mail"
+description = """
+Clean up old wisps, then check mail.
+
+```bash
+bd mol wisp gc --closed --force
+bd mol wisp gc --age 1h --force
+gt mail inbox
+```
+
+Process each message:
+
+**BEAD_MERGED**
+Refinery merged a bead. Dependencies may be unblocked. Archive and proceed to convoy-scan.
+```bash
+gt mail archive <message-id>
+```
+Note the merged issue ID — it informs which beads to check in ready-scan.
+
+**ESCALATION**
+A polecat or Witness needs Mayor judgment. Read, decide, respond, archive.
+If you cannot resolve, escalate to overseer.
+```bash
+gt mail archive <message-id>
+```
+
+**HANDOFF**
+Predecessor Mayor context. Absorb, then archive.
+```bash
+gt mail archive <message-id>
+```
+
+**CONVOY_NEEDS_FEEDING** (from Deacon)
+Deacon detected idle polecats with no active beads. Treat same as patrol trigger.
+```bash
+gt mail archive <message-id>
+```
+
+**Hygiene**: Inbox should be near-empty after this step. Archive everything processed."""
+
+[[steps]]
+id = "convoy-scan"
+title = "Scan convoy and polecat status"
+needs = ["inbox-check"]
+description = """
+Get a full picture of current convoy state before making sling decisions.
+
+**Step 1: Polecat status**
+```bash
+gt polecat list <rig>
+```
+
+Note:
+- Which polecats are idle (available for sling)
+- Which polecats are working (active bead assignments)
+- Which polecats are in mr_submitted state (waiting for merge)
+
+**Step 2: Active bead assignments**
+```bash
+bd list --status=in_progress
+```
+
+Cross-reference with polecat list. If a bead is in_progress but the polecat session is dead,
+flag it — the bead may need to be re-slid or the polecat restarted.
+
+**Step 3: Blocked beads**
+```bash
+bd blocked
+```
+
+Note blocked beads and what is blocking them. This context informs which newly-merged
+beads may have unblocked downstream work.
+
+Track:
+- idle_polecats: list of polecat names available for sling
+- working_polecats: list with their bead assignments
+- blocked_beads: IDs and what is blocking them"""
+
+[[steps]]
+id = "ready-scan"
+title = "Find ready beads"
+needs = ["convoy-scan"]
+description = """
+Find all beads ready to work — unblocked, unassigned, prioritized.
+
+```bash
+bd ready
+```
+
+This is the source of truth for what can be slid right now.
+
+If `bd ready` returns empty:
+- All work is either in-progress, blocked, or complete
+- If work is genuinely complete for this wave, say so and proceed to context-check
+- Do NOT sit idle if there are blocked beads you could unblock
+
+If `bd ready` returns beads:
+- Prioritize by: P0 > P1 > P2, then by dependency chain (beads that unblock others first)
+- Match beads to available polecats from convoy-scan
+- Track your assignment plan for sling-wave
+
+Track:
+- ready_beads: list with IDs, titles, priorities
+- assignment_plan: which bead goes to which polecat"""
+
+[[steps]]
+id = "sling-wave"
+title = "Sling ready beads to polecats"
+needs = ["ready-scan"]
+description = """
+Execute the assignment plan from ready-scan.
+
+If no ready beads: skip this step, proceed to context-check.
+If no idle polecats: skip this step, note "all polecats busy", proceed to context-check.
+
+**For each bead in assignment_plan:**
+
+```bash
+gt polecat sling <rig> <bead-id> <polecat-name>
+```
+
+Run slings in parallel — do not wait for one to complete before starting the next.
+
+**After all slings, verify each landed:**
+```bash
+gt polecat list <rig>
+```
+
+**Capture to OpenBrain (MANDATORY if any beads were slid):**
+
+```
+capture_thought("[TASK gastown] [DECISION] YYYY-MM-DD - Wave slid: <bead-id> to <polecat>, <bead-id> to <polecat>. Rationale: <why this ordering, why these polecats>. Remaining ready: <count>. Polecats idle after sling: <count>")
+```
+
+Track: slings_completed, slings_failed"""
+
+[[steps]]
+id = "context-check"
+title = "Assess session health"
+needs = ["sling-wave"]
+description = """
+Assess whether this session should continue or hand off.
+
+**Gather signals:**
+
+1. **Process memory:**
+```bash
+ps -o rss= -p $$
+```
+
+2. **Session age:**
+```bash
+CREATED=$(tmux display-message -t $(tmux display-message -p '#S') -p '#{session_created}')
+echo "Session age: $(( ($(date +%s) - CREATED) / 3600 ))h"
+```
+
+3. **Context usage** — your internal sense of how much context you have consumed.
+
+**Rule of thumb:**
+- RSS > 1.5 GB → hand off
+- Session age > 6h → hand off
+- Context feels heavy → hand off
+- Light and active work in the queue → continue"""
+
+[[steps]]
+id = "patrol-cleanup"
+title = "Inbox hygiene"
+needs = ["context-check"]
+description = """
+Final inbox check before looping.
+
+```bash
+gt mail inbox
+```
+
+Any processed but unarchived messages? Archive them now.
+Inbox should be empty or contain only unprocessed items for next cycle."""
+
+[[steps]]
+id = "burn-or-loop"
+title = "Await next trigger or hand off"
+needs = ["patrol-cleanup"]
+description = """
+End of patrol cycle. Use signals from context-check to decide.
+
+**If continuing:**
+
+Resolve your agent bead ID (replace YOUR_RIG with your actual rig name):
+```bash
+bd list --type=agent --desc-contains="role_type: mayor" --json | jq -r '.[] | select(.status != "closed") | select(.description | test("(?m)^\s*rig: YOUR_RIG\s*$")) | .id'
+```
+Must return exactly one ID.
+
+Wait for next trigger:
+```bash
+gt mol step await-signal --agent-bead YOUR_AGENT_BEAD \
+  --backoff-base 60s --backoff-mult 2 --backoff-max 10m
+```
+
+This command:
+1. Subscribes to `bd activity --follow` (fires on any beads state change)
+2. Returns IMMEDIATELY when beads activity occurs
+3. Times out with exponential backoff (60s → 120s → ... → 10m max)
+4. Tracks `idle:N` label on your agent bead
+
+**On signal received** — reset idle counter:
+```bash
+gt agent state YOUR_AGENT_BEAD --set idle=0
+```
+
+After await-signal returns (signal or timeout):
+```bash
+gt patrol report --summary "<brief: beads slid, polecats active, queue state>"
+```
+Then return to inbox-check.
+
+**If handing off:**
+```bash
+gt handoff -s "Mayor patrol handoff" -m "Polecats active: <list with beads>.
+Wave state: <which wave, beads remaining>.
+Ready beads: <list>.
+Blocked beads: <list>.
+Next priority: <what to sling next and why>"
+```
+
+**IMPORTANT**: Never exit without handoff. Never sleep-poll manually.
+Always use `gt mol step await-signal` — it tracks backoff state."""

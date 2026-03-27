@@ -75,6 +75,25 @@ python3 "$SCRIPT_DIR/scripts/patch-agents.py" $PATCH_ARGS
 echo "Patching mol-polecat-work formula..."
 python3 "$SCRIPT_DIR/scripts/patch-formula.py" --gt-dir "$GT_DIR"
 
+# Install custom formulas (override Gas Town defaults with project-template versions)
+FORMULAS_DIR="$SCRIPT_DIR/formulas"
+if [ -d "$FORMULAS_DIR" ]; then
+    FORMULA_COUNT=0
+    for formula in "$FORMULAS_DIR"/*.formula.toml; do
+        [ -f "$formula" ] || continue
+        fname="$(basename "$formula")"
+        dest="$GT_DIR/.beads/formulas/$fname"
+        cp "$formula" "$dest"
+        echo "OK   formula installed: $fname"
+        FORMULA_COUNT=$((FORMULA_COUNT + 1))
+    done
+    if [ "$FORMULA_COUNT" -eq 0 ]; then
+        echo "SKIP formulas: none found in $FORMULAS_DIR"
+    else
+        echo "OK   $FORMULA_COUNT formula(s) installed"
+    fi
+fi
+
 echo ""
 echo "Gas Town setup complete."
 echo "Restart Gas Town to pick up changes: gt down --all && gt start && gt rig boot <rig>"

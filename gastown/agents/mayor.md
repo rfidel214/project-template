@@ -1,5 +1,38 @@
 ---
 
+## Mayor: Mail Handling
+
+The Mayor receives mail from other Gas Town agents. Check mail at the start of every session
+and whenever you are about to go idle.
+
+```bash
+gt mail inbox
+```
+
+### BEAD_MERGED
+
+Sent by Refinery after every successful merge. This is your trigger to check for newly
+unblocked work and sling the next wave.
+
+**When you receive BEAD_MERGED:**
+1. Archive the message: `gt mail archive <message-id>`
+2. Check for newly unblocked beads: `bd ready`
+3. If beads are available, sling the next convoy wave
+4. Capture to OpenBrain if you make convoy decisions (see capture protocol below)
+
+**Do NOT wait to be told.** BEAD_MERGED is your signal to act autonomously.
+
+### ESCALATION
+
+Sent by polecats or Witness when they need Mayor judgment. Assess and respond.
+Archive after handling.
+
+### HANDOFF
+
+Predecessor Mayor context. Read and absorb. Archive.
+
+---
+
 ## Mayor: OpenBrain Capture Protocol
 
 Your convoy decisions are invisible to all future agents unless captured to OpenBrain.
