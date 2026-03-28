@@ -194,9 +194,41 @@ capture_thought("[TASK gastown] [DECISION] YYYY-MM-DD - Wave slid: <bead-id> to 
 Track: slings_completed, slings_failed"""
 
 [[steps]]
+id = "openbrain-capture"
+title = "Capture patrol findings to OpenBrain"
+needs = ["sling-wave"]
+description = """
+Review what happened this patrol cycle and capture meaningful findings to OpenBrain.
+
+SKIP capture if this was an idle cycle (no merges, no escalations, no slings, no decisions).
+
+CAPTURE if any of these occurred:
+- Beads were slid (already captured in sling-wave, but add convoy context)
+- Convoy landed or status changed
+- Escalation received or resolved
+- Decision made (priority change, rig dock/undock, blocker resolution)
+- Error encountered and fixed
+- Discovery about system behavior
+
+Format: capture_thought("[PATROL] [CATEGORY] YYYY-MM-DD — description")
+
+Categories: CONVOY_LANDED, ESCALATION, DECISION, ERROR, DISCOVERY, PROGRESS
+
+Examples:
+- "[PATROL] [CONVOY_LANDED] 2026-03-28 — hq-cv-abc landed: 3/3 beads closed, TUI syntax highlighting complete"
+- "[PATROL] [ESCALATION] 2026-03-28 — polecat Toast stuck on merge conflict in input.rs, nudged Witness to recycle"
+- "[PATROL] [DECISION] 2026-03-28 — Docked helmv2 rig, no ready beads, saving tokens"
+
+Rules:
+- One capture per significant event, not one big dump
+- Skip if nothing happened — idle patrols produce no captures
+- Max 3 captures per cycle — if more happened, summarize
+"""
+
+[[steps]]
 id = "context-check"
 title = "Assess session health"
-needs = ["sling-wave"]
+needs = ["openbrain-capture"]
 description = """
 Assess whether this session should continue or hand off.
 
@@ -246,7 +278,7 @@ End of patrol cycle. Use signals from context-check to decide.
 
 Resolve your agent bead ID (replace YOUR_RIG with your actual rig name):
 ```bash
-bd list --type=agent --desc-contains="role_type: mayor" --json | jq -r '.[] | select(.status != "closed") | select(.description | test("(?m)^\s*rig: YOUR_RIG\s*$")) | .id'
+bd list --type=agent --desc-contains="role_type: mayor" --json | jq -r '.[] | select(.status != "closed") | select(.description | test("(?m)^\\s*rig: YOUR_RIG\\s*$")) | .id'
 ```
 Must return exactly one ID.
 

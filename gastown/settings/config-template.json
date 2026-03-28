@@ -17,7 +17,8 @@
     },
     "{{OPENCODE_BASE_AGENT_ID}}": {
       "command": "opencode",
-      "args": ["-m", "{{OPENCODE_BASE_MODEL}}"]
+      "args": ["-m", "{{OPENCODE_BASE_MODEL}}"],
+      "prompt_mode": "arg"
     }
   }
 }

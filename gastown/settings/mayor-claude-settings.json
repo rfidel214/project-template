@@ -1,0 +1,11 @@
+{
+  "model": "claude-sonnet-4-6",
+  "hooks": {
+    "PreCompact": [
+      {
+        "type": "command",
+        "command": "~/gt/mayor/hooks/precompact-capture.sh"
+      }
+    ]
+  }
+}

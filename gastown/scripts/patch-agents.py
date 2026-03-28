@@ -53,7 +53,7 @@ def main():
     patch(
         gt_dir / "AGENTS.md",
         load_content("gt-workspace.md"),
-        "## OpenBrain Capture Protocol (All Gas Town Agents)",
+        "## OpenBrain Capture Protocol — Tiered Write Policy",
         "~/gt/AGENTS.md",
     ) or errors.append("~/gt/AGENTS.md")
 

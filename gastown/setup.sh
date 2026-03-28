@@ -99,6 +99,53 @@ if [ -d "$FORMULAS_DIR" ]; then
     fi
 fi
 
+# Install PreCompact hook for Mayor
+# Note: this hook captures session summaries to OpenBrain memory before context compaction.
+echo "Installing PreCompact hook..."
+mkdir -p ~/gt/mayor/hooks/
+cp "$SCRIPT_DIR/hooks/precompact-capture.sh" ~/gt/mayor/hooks/precompact-capture.sh
+chmod +x ~/gt/mayor/hooks/precompact-capture.sh
+echo "OK   PreCompact hook installed: ~/gt/mayor/hooks/precompact-capture.sh"
+
+# Install Mayor Claude settings (only if Mayor is running on Claude)
+MAYOR_AGENT="${MAYOR_AGENT:-}"
+if [ -z "$MAYOR_AGENT" ] && [ -f "$GT_DIR/settings/config.json" ]; then
+    MAYOR_AGENT=$(python3 -c "
+import json
+data = json.load(open('$GT_DIR/settings/config.json'))
+print(data.get('role_agents', {}).get('mayor', ''))
+" 2>/dev/null || echo "")
+fi
+if echo "$MAYOR_AGENT" | grep -qi "claude"; then
+    mkdir -p ~/gt/mayor/.claude/
+    cp "$SCRIPT_DIR/settings/mayor-claude-settings.json" ~/gt/mayor/.claude/settings.json
+    echo "OK   Mayor Claude settings installed: ~/gt/mayor/.claude/settings.json"
+else
+    echo "SKIP mayor-claude-settings.json: Mayor agent is not Claude (agent: ${MAYOR_AGENT:-unknown})"
+fi
+
+# Install escalation.json
+echo "Installing escalation.json..."
+mkdir -p "$GT_DIR/settings/"
+cp "$SCRIPT_DIR/settings/escalation.json" "$GT_DIR/settings/escalation.json"
+echo "OK   escalation.json installed: $GT_DIR/settings/escalation.json"
+
+# Add gtm alias to ~/.bashrc
+GTM_ALIAS='alias gtm="~/go/bin/gt mayor attach --agent claude-sonnet"'
+if grep -qF 'alias gtm=' ~/.bashrc 2>/dev/null; then
+    echo "SKIP ~/.bashrc: gtm alias already present"
+else
+    echo "" >> ~/.bashrc
+    echo "# Gas Town: attach to Mayor agent" >> ~/.bashrc
+    echo "$GTM_ALIAS" >> ~/.bashrc
+    echo "OK   gtm alias added to ~/.bashrc"
+fi
+
+# Note: preferred way to register agents is via gt CLI commands, not manual config.json editing:
+#   gt config agent set <agent-id> --command <cmd> --args "<args>"
+#   gt rig settings set <rig> <key> <value>
+
 echo ""
 echo "Gas Town setup complete."
 echo "Restart Gas Town to pick up changes: gt down --all && gt start && gt rig boot <rig>"
+echo "Tip: run 'source ~/.bashrc' (or open a new shell) to activate the gtm alias."
