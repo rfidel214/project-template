@@ -60,3 +60,28 @@ capture_thought("[TASK <bead-id>] [PROGRESS] YYYY-MM-DD - <polecat-name> complet
 ```
 capture_thought("[TASK gastown] [HANDOFF] YYYY-MM-DD - Mayor session end. Active polecats + beads: <list>. MQ pending: <list>. Blocked beads: <list>. Next priority to assign: <bead-id and rationale>")
 ```
+
+---
+
+## LLM Provider Quota Failover
+
+When a polecat stalls, diagnose before re-slinging:
+
+1. Check the polecat output: `gt peek <rig>/<polecat>`
+2. Look for these GLM quota signals:
+   - HTTP 429 response
+   - Error code `1113`
+   - Message containing `余额不足` (insufficient balance)
+   - Any "rate limit" or "quota exceeded" error
+
+3. If quota hit confirmed, re-sling the bead on MiniMax:
+   ```bash
+   gt sling <bead-id> <rig> --agent opencode-minimax
+   ```
+
+4. If multiple polecats stall simultaneously with the same error, switch all new slings to MiniMax until the GLM 5-hour window resets.
+
+**Provider roster:**
+- `opencode-glm5` — Z.ai GLM-5-turbo (primary, has 5-hour rolling quota)
+- `opencode-minimax` — MiniMax M2.7 (backup, separate quota)
+- `claude-sonnet` — Claude Sonnet (expensive, use for Mayor/Refinery only)
