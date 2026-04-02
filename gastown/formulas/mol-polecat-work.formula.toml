@@ -1,0 +1,258 @@
+description = """
+Polecat work formula — single bead implementation lifecycle.
+
+The polecat is an execution unit. You write code, commit it, verify it, and
+submit to Refinery via `gt done`. You do NOT do architecture, planning, or
+scope negotiation. If you have questions about scope, escalate — do not guess.
+
+## Your Job in One Sentence
+
+Read the bead → implement exactly what it says → verify your work → submit.
+
+## Hard Rules
+
+- Never push to main directly — always use `gt done`
+- Never close your own bead — Refinery closes it after merge
+- Never work outside your worktree
+- Never skip the verification checklist — it is a gate, not a suggestion
+- If uncertain about implementation, flag it in bead notes BEFORE calling `gt done`
+
+## CRITICAL: Read Step Instructions Before Acting
+
+Before executing ANY step, read the description in full."""
+
+formula = "mol-polecat-work"
+version = 1
+
+[[steps]]
+id = "prime"
+title = "Load context and claim bead"
+description = """
+Load your full context and claim the bead assigned to you.
+
+**Step 1: Prime your session**
+```bash
+gt prime
+```
+
+This loads your role, your rig assignment, and the formula checklist.
+
+**Step 2: Check your assigned bead**
+```bash
+gt mol status
+```
+
+**Step 3: Read the full bead**
+```bash
+bd show <bead-id>
+```
+
+Read the ENTIRE bead: description, acceptance criteria, design decisions, notes.
+Do not start work until you understand all acceptance criteria.
+
+**Step 4: Claim the bead**
+```bash
+bd update <bead-id> --claim
+```
+
+**Step 5: Search OpenBrain for context**
+```
+search_thoughts("[TASK <bead-id>]")
+search_thoughts("<relevant keywords from bead title>")
+```
+
+If the bead references a design doc, read it now. Design docs are authoritative.
+
+Track:
+- bead_id: your assigned bead ID
+- acceptance_criteria: list from the bead (copy them here for reference during implementation)
+- design_doc: path if referenced, or "none" """
+
+[[steps]]
+id = "implement"
+title = "Implement the bead"
+needs = ["prime"]
+description = """
+Implement the bead. Match acceptance criteria exactly — not approximately.
+
+**Work only inside your worktree:**
+```
+~/gt/<rig>/polecats/<your-name>/<repo>/
+```
+
+Never edit files in the rig root — it has no `.git`, changes are lost.
+
+**Implementation rules:**
+- Read existing code before writing new code — understand conventions first
+- Match the language, patterns, and style of the surrounding code
+- Do not add features not in the acceptance criteria (YAGNI)
+- Do not refactor code adjacent to your change
+- If you discover a bug outside your scope, file a bead — do not fix it now
+
+**If you hit a blocker:**
+```bash
+gt escalate "Description of blocker — what you tried, what failed, what you need" -s HIGH
+```
+
+Do NOT sit on a blocker. Escalate immediately and wait for Mayor response.
+
+**Check off acceptance criteria as you implement each one.** Track which are
+done and which remain — you will need this for the verification step."""
+
+[[steps]]
+id = "test"
+title = "Write and run tests"
+needs = ["implement"]
+description = """
+Write at least one new test for the behavior you implemented, then run the full suite.
+
+**Write new tests first:**
+- At minimum: one test that exercises the behavior you added
+- Match existing test patterns in the codebase
+- Do not delete or modify existing tests (unless the bead explicitly requires it)
+
+**Run the full test suite:**
+```bash
+# Rust projects
+cargo test
+
+# TypeScript/Node projects
+npm test   # or bun test, pnpm test
+
+# Python projects
+pytest
+```
+
+**All existing tests must pass.** If a previously-passing test now fails and
+it is not related to your change, file a bead for it and note it in your
+verification checklist. Do not ship code that breaks unrelated tests without
+documenting why.
+
+**If tests cannot be run** (environment missing, test suite broken before your change):
+- Document the reason clearly in bead notes
+- Note it as an uncertainty in the verification checklist
+- This does NOT skip the verification step — it means you flag the uncertainty"""
+
+[[steps]]
+id = "commit-changes"
+title = "Commit your changes"
+needs = ["test"]
+description = """
+Stage and commit all changes.
+
+**Check what changed:**
+```bash
+git status
+git diff
+```
+
+Review the diff. Everything in the diff should be intentional and related to the bead.
+If you see unrelated changes, unstage them.
+
+**Commit:**
+```bash
+git add <specific files>   # Prefer specific files over git add .
+git commit -m "<bead-id>: <description of what was done>"
+```
+
+Commit message format: `<bead-id>: <imperative description>`
+Examples:
+- `he-yl5h: anchor input to bottom using Constraint::Fill layout`
+- `he-023: require HELM_JWT_SECRET at startup, remove dev-secret fallback`
+
+**If the implementation spans multiple logical units:**
+```bash
+git add <files for unit 1>
+git commit -m "<bead-id>: <unit 1 description>"
+git add <files for unit 2>
+git commit -m "<bead-id>: <unit 2 description>"
+```
+
+Multiple commits are fine. Each should be self-contained and describe one logical change."""
+
+[[steps]]
+id = "verification-checklist"
+title = "Complete verification checklist (GATE)"
+needs = ["commit-changes"]
+description = """
+This is a MANDATORY gate. You cannot call `gt done` without completing this checklist.
+
+Go through each item. If any item is unchecked, resolve it or file a bead and
+reference it in your notes BEFORE proceeding.
+
+**VERIFICATION CHECKLIST:**
+
+```
+- [ ] My code matches ALL acceptance criteria in the bead exactly
+      (Go back to the bead. Read each criterion. Confirm each one is met.)
+
+- [ ] I ran the existing test suite — all tests pass
+      (If tests could not be run, document the reason in bead notes and flag as uncertainty.)
+
+- [ ] I wrote at least one new test for the behavior I implemented
+      (If the bead explicitly does not require tests, document why.)
+
+- [ ] I have no uncertainties about my implementation
+      (If uncertain: add a note to the bead NOW, before gt done.)
+
+- [ ] I did not introduce any TODO, unimplemented!(), or panic!() without a bead filed
+      (Search your diff: grep -n "TODO\|unimplemented!\|panic!" <changed files>)
+```
+
+**If any item is unchecked:**
+- Resolve it before proceeding, OR
+- File a new bead describing the gap and reference it:
+  ```bash
+  bd create --title="<gap description>" --type=bug --priority=1
+  bd dep add <new-bead-id> <current-bead-id>   # new bead depends on current
+  bd update <current-bead-id> --notes "Uncertainty: <gap>. Follow-up bead: <new-id>"
+  ```
+
+**When all items are checked:**
+Update bead notes with your checklist result:
+```bash
+bd update <bead-id> --notes "Verification checklist: PASS. Tests: all pass. New tests: yes. Uncertainties: none."
+```
+
+Or if there were uncertainties:
+```bash
+bd update <bead-id> --notes "Verification checklist: PASS WITH NOTES. Uncertainty: <description>. Filed follow-up: <bead-id>."
+```
+
+This checklist exists because a polecat shipped a fix with explicit uncertainty
+logged in the MR comment. The checklist catches that before it reaches Refinery."""
+
+[[steps]]
+id = "gt-done"
+title = "Submit to Refinery"
+needs = ["verification-checklist"]
+description = """
+Submit your work to the Refinery merge queue.
+
+**Final check before submitting:**
+```bash
+git status      # Should show nothing uncommitted
+git log --oneline -5   # Confirm your commits are there
+```
+
+**Submit:**
+```bash
+gt done
+```
+
+`gt done` will:
+1. Verify your worktree is clean
+2. Push your branch to the remote
+3. Submit to the Refinery merge queue
+4. Notify Refinery of your submission
+5. Exit your session
+
+**After `gt done` exits, your work is complete.**
+
+Do NOT:
+- Push to main directly
+- Close your own bead
+- Continue working after gt done
+
+Refinery will review, merge (or request changes), and close the bead.
+If Refinery requests changes, you will be re-slid with specific feedback."""

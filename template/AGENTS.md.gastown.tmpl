@@ -30,15 +30,21 @@ gt done           # Submit to Refinery merge queue — MANDATORY, replaces manua
 
 `gt done` verifies clean state, submits to Refinery, exits. Never push to main directly.
 
-### OpenBrain Capture (Polecats)
+### Polecat Verification Checklist (MANDATORY before gt done)
 
-The `mol-polecat-work` formula has a mandatory `capture-findings` gate step between
-`commit-changes` and `pre-verify`. Polecats cannot submit to the merge queue without:
+The `mol-polecat-work` formula has a mandatory `verification-checklist` gate step
+before `gt done`. Polecats cannot submit to the merge queue without completing:
 
-1. Calling `capture_thought("[TASK {{issue}}] [COMPLETED] ...")` with a structured summary
-2. Updating bead notes: `bd update {{issue}} --notes "COMPLETED: <summary>"`
+```
+- [ ] My code matches ALL acceptance criteria in the bead exactly
+- [ ] I ran the existing test suite — all tests pass
+- [ ] I wrote at least one new test for the behavior I implemented
+- [ ] I have no uncertainties about my implementation
+- [ ] I did not introduce any TODO, unimplemented!(), or panic!() without a bead filed
+```
 
-See formula step for exact format. OpenBrain MCP is pre-configured in opencode config.
+Result must be recorded in bead notes before `gt done`. See `gastown/agents/polecat.md`
+for full polecat role documentation and escalation protocol.
 
 ### Communication Hygiene
 
@@ -62,7 +68,17 @@ gt nudge <target> "msg"  # Ephemeral message (prefer over mail)
 ### gstack Integration
 
 Gas Town agents use gstack skills based on their role:
-- **Mayor** uses `/plan-eng-review` before dispatching convoys
+- **Mayor** uses `/plan-eng-review` before dispatching convoys, `/cso` before milestone releases
 - **Refinery** gates merges with `/review` and `/cso` (security audit)
 - **Flint (crew)** uses full sprint cycle for one-off tasks
 - **Polecats do NOT use gstack** — they are execution units
+
+### Mayor Cold-Start
+
+After startup, Mayor must NOT wait for instructions. Enter the patrol loop immediately:
+```bash
+bd mol pour mol-mayor-patrol
+```
+
+If `bd ready` returns empty on first patrol, check `bd ready --rig <rig>` — Mayor
+runs from HQ, plain `bd ready` only shows HQ beads, not rig beads.

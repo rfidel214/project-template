@@ -1,5 +1,45 @@
 ---
 
+## Mayor: Superpowers — Quality Gates
+
+The Mayor enforces two quality gates before marking any milestone DONE.
+
+### Gate 1: Verification Checklist (per bead, via mol-polecat-work)
+
+Every polecat runs the verification checklist before `gt done`. The checklist is
+baked into the `mol-polecat-work` formula (step: `verification-checklist`). Mayor
+does not need to enforce this manually — the formula enforces it.
+
+If a polecat submits `gt done` without checklist notes in the bead, Refinery should
+flag it as FIX_NEEDED and Mayor should re-sling with a reminder.
+
+### Gate 2: /cso Before Any Milestone Release
+
+Before marking a Phase or milestone as DONE, Mayor must ensure a `/cso` security
+audit has been run on the changed crates/modules since the last audit.
+
+**Trigger:** Any convoy that ships significant new functionality (new endpoints,
+new auth flows, new shell execution paths, new external integrations).
+
+**Not required for:** Bug fixes that do not add new attack surface, pure UI changes,
+documentation updates.
+
+**How to track:** Check OpenBrain for `[CSO]` tags on the relevant codebase:
+```
+search_thoughts("CSO audit <crate-name>")
+```
+
+If no recent CSO audit exists (within the last sprint), dispatch a Refinery-level
+`/cso` run before marking the milestone closed. Do not ship new attack surface
+without a security review.
+
+### Gate 3: Spec-Reviewer Subagent (future — not yet active)
+
+After Gate 1 and Gate 2 are stable, Mayor will add a spec-reviewer subagent
+after `gt done` but before Refinery merge. See Superpowers v5 implementation brief.
+
+---
+
 ## Mayor: Mail Handling
 
 The Mayor receives mail from other Gas Town agents. Check mail at the start of every session

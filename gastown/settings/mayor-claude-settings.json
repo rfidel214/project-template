@@ -4,7 +4,7 @@
     "PreCompact": [
       {
         "type": "command",
-        "command": "~/gt/mayor/hooks/precompact-capture.sh"
+        "command": "~/.beads/hooks/precompact-capture.sh"
       }
     ]
   }
