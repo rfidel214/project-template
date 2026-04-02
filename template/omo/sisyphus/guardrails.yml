@@ -1,0 +1,48 @@
+# OMO Guardrails — PreToolUse enforcement rules
+# These intercept agent actions before they execute.
+# Severity: "block" stops the action, "warn" allows with a message.
+
+rules:
+  - id: no-direct-main-push
+    description: "Never push directly to main or master"
+    trigger: git_push
+    pattern: "origin (main|master)"
+    severity: block
+    message: |
+      Direct push to main is blocked. Use a feature branch and merge via PR or gt done.
+      Branch naming: feat/<bead-id>-description or fix/<bead-id>-description
+
+  - id: no-force-push
+    description: "Never force push without explicit confirmation"
+    trigger: git_push
+    pattern: "--force|--force-with-lease|-f "
+    severity: block
+    message: |
+      Force push blocked. If you genuinely need this, confirm with the user first.
+
+  - id: no-secret-files
+    description: "Never write .env files with real secrets to the repo"
+    trigger: file_write
+    pattern: "\.env$"
+    severity: warn
+    message: |
+      Writing a .env file. Verify this is a template (.env.example) and contains
+      no real secrets. Real secrets must never be committed.
+
+  - id: no-drop-table
+    description: "Never run DROP TABLE or DROP DATABASE without explicit confirmation"
+    trigger: shell_command
+    pattern: "DROP (TABLE|DATABASE|SCHEMA)"
+    severity: block
+    message: |
+      Destructive SQL operation blocked. Confirm with the user before running
+      schema-dropping migrations.
+
+  - id: confirm-production-deploy
+    description: "Confirm before deploying to production"
+    trigger: shell_command
+    pattern: "(deploy|release|publish).*(prod|production)"
+    severity: warn
+    message: |
+      Production deployment detected. Verify: tests pass, security review done,
+      rollback plan exists.

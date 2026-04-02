@@ -177,6 +177,86 @@ search_thoughts("CURRENT BLOCKERS")
 
 ---
 
+## OMO — Single-Agent Structured Execution
+
+**OMO** (oh-my-openagent) is the middle layer between raw Claude Code and Gas Town.
+Use it for medium/large features that benefit from specialist agent delegation
+but don't need full multi-agent convoy orchestration.
+
+### When to Use OMO
+
+| Situation | Tool |
+|-----------|------|
+| Quick fix, <5 files | Raw Claude Code |
+| Feature, 5–20 files, single agent | **OMO** |
+| Large feature, 20+ files, single agent | **OMO** |
+| Multiple parallel independent workstreams | Gas Town |
+
+### Setup (one-time per project)
+
+```bash
+# Install oh-my-openagent
+npm install -g oh-my-openagent   # or: bun add -g oh-my-openagent
+
+# Copy the template config (if using project-template)
+cp template/omo/opencode.json.tmpl ~/.config/opencode/opencode.json
+# Edit: replace {{OPEN_BRAIN_MCP_URL}} with your actual OpenBrain MCP URL
+
+# Copy sisyphus rules (project-local enforcement)
+cp -r template/omo/sisyphus .sisyphus
+# Edit .sisyphus/rules/ and .sisyphus/guardrails.yml to match your project conventions
+```
+
+### Starting an OMO Session
+
+```bash
+# From your project root, in a worktree for the feature:
+git worktree add ../worktrees/feat-<bead-id> -b feat/<bead-id>
+cd ../worktrees/feat-<bead-id>
+
+# Start OMO (reads AGENTS.md automatically)
+opencode                         # with oh-my-openagent plugin active
+
+# Inside OMO, prime the session:
+# /start-work --worktree         (Prometheus plans, Atlas executes in this worktree)
+# /bd prime                      (loads beads context)
+```
+
+### OMO Agent Roster
+
+| Agent | Role | When |
+|-------|------|------|
+| **Sisyphus** | Orchestrator | Delegates to other agents, tracks completion |
+| **Prometheus** | Planner | Creates worktree-aware implementation plans |
+| **Atlas** | Executor | Implements code, runs tests, commits |
+| **Momus** | Verifier | Reviews implementation against spec |
+
+### OMO Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `~/.config/opencode/opencode.json` | Global OMO config — plugin, providers, MCP |
+| `.sisyphus/rules/*.md` | Project-local code quality rules (markdown) |
+| `.sisyphus/guardrails.yml` | PreToolUse enforcement (blocks dangerous ops) |
+
+### Session End
+
+```bash
+# After OMO completes, from the worktree:
+git push -u origin feat/<bead-id>
+bd close <bead-id>
+capture_thought("[TASK <bead-id>] [COMPLETED] ...")
+
+# Merge back:
+cd <project-root>
+git merge feat/<bead-id>
+git push
+git worktree remove ../worktrees/feat-<bead-id>
+git branch -d feat/<bead-id>
+```
+
+---
+
 ## Development Process (gstack)
 
 This project uses [gstack](https://github.com/garrytan/gstack) skills for structured development. Skills are available as slash commands in Claude Code.

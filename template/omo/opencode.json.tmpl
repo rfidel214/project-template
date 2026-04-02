@@ -1,0 +1,23 @@
+{
+  "plugins": ["oh-my-openagent"],
+  "instructions": ["AGENTS.md"],
+  "mcp": {
+    "open-brain": {
+      "type": "remote",
+      "url": "{{OPEN_BRAIN_MCP_URL}}",
+      "enabled": true
+    }
+  },
+  "providers": {
+    "anthropic": {
+      "models": ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
+      "apiKey": "${ANTHROPIC_API_KEY}"
+    }
+  },
+  "agents": {
+    "default": {
+      "model": "claude-sonnet-4-6",
+      "fallback_models": ["claude-haiku-4-5-20251001"]
+    }
+  }
+}

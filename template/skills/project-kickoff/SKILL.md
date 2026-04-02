@@ -85,6 +85,27 @@ No gstack. No OMO. No Gas Town. Just do it.
 
 **Real example:** cortex-web Next.js migration (~15 files, medium risk, single agent) → Path 3.
 
+**How to launch OMO for this path:**
+```bash
+# 1. Create worktree for the feature
+git worktree add ../worktrees/feat-<bead-id> -b feat/<bead-id>
+cd ../worktrees/feat-<bead-id>
+
+# 2. Start OMO (reads AGENTS.md automatically)
+opencode
+
+# 3. Inside OMO — prime context
+#    /start-work --worktree
+#    /bd prime
+#    Then implement, gate each phase with /verification-before-completion
+
+# 4. Session end
+git push -u origin feat/<bead-id>
+bd close <bead-id>
+cd <project-root> && git merge feat/<bead-id> && git push
+git worktree remove ../worktrees/feat-<bead-id>
+```
+
 ---
 
 ### PATH 4 — Existing repo, large feature
@@ -100,6 +121,15 @@ No gstack. No OMO. No Gas Town. Just do it.
   → /finishing-a-development-branch
   → merge
 → consider Gas Town if parallel workstreams emerge mid-project
+```
+
+**How to launch OMO for this path:**
+```bash
+# Same as Path 3, but use /test-driven-development inside OMO first
+git worktree add ../worktrees/feat-<bead-id> -b feat/<bead-id>
+cd ../worktrees/feat-<bead-id>
+opencode
+# Inside OMO: /start-work --worktree → /test-driven-development → implement → gates → push
 ```
 
 ---
