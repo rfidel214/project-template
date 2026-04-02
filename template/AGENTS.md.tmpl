@@ -149,6 +149,34 @@ search_thoughts("CURRENT BLOCKERS")
 
 {{GASTOWN_SECTION}}
 
+## Project Kickoff — Toolchain Routing
+
+**Run `/project-kickoff` before starting any new project or major feature.** It asks 4 questions and routes you to the right toolchain. Never default to Gas Town for solo work or raw Claude Code for high-risk changes.
+
+### The 4 Questions
+1. **Starting point?** — New idea (no code) OR existing repo?
+2. **Scope?** — <5 files / 5–20 files / 20+ files?
+3. **Risk?** — Isolated / touches prod / touches shared infrastructure?
+4. **Parallelism?** — Single agent OR multiple parallel workstreams?
+
+### Routing at a Glance
+
+| Scenario | Path |
+|----------|------|
+| New idea, no code yet | `/office-hours` → `/plan-ceo-review` → `/plan-design-review` → `/plan-eng-review` → OMO or Gas Town |
+| Existing repo, quick fix (<5 files, low risk) | Claude Code → Superpowers `/verification-before-completion` → push |
+| Existing repo, medium project (5–20 files) | `/plan-eng-review` → Superpowers `/writing-plans` → OMO worktree → Superpowers review loop → merge |
+| Existing repo, large feature (20+ files, high risk) | `/autoplan` → OMO → Superpowers → consider Gas Town |
+| Multiple parallel workstreams | Gas Town |
+
+### Toolchain Roles
+- **gstack** — THINK + PLAN + SECURITY + REFLECT
+- **Superpowers** — BUILD quality gates + two-stage REVIEW
+- **OMO** — EXECUTE in isolated worktree (single agent, mid-size work)
+- **Gas Town** — EXECUTE at scale (multi-agent convoy, parallel workstreams)
+
+---
+
 ## Development Process (gstack)
 
 This project uses [gstack](https://github.com/garrytan/gstack) skills for structured development. Skills are available as slash commands in Claude Code.
