@@ -146,6 +146,15 @@ This applies to:
 
 **Pattern:** Patrol report arrives → assess → draft Mayor prompt → present it. No "want me to write a prompt?" loop.
 
+### Agent Dispatch Rules (Claude Code sessions)
+
+**Do not do research, searches, or status checks in the main Sonnet context.** Dispatch subagents instead:
+
+- **Haiku** — all searches, file reads, status checks, OpenBrain queries, SSH commands, bead lookups. Fast and cheap.
+- **Sonnet** — synthesis, judgment, writing prompts, architectural decisions, reasoning across multiple sources.
+
+**Pattern:** Need to check something? `Agent(model: haiku, ...)`. Get the result. Then reason over it in Sonnet. Never burn Sonnet tokens on mechanical lookups.
+
 ---
 
 ## What NOT to Do
