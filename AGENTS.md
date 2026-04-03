@@ -130,6 +130,24 @@ Open Brain is the institutional knowledge layer. It stores architectural decisio
 
 ---
 
+## Gas Town Integration (if applicable)
+
+If this project uses Gas Town for multi-agent orchestration, follow this protocol:
+
+### Mayor Coordination Protocol
+
+When working with the user and Mayor action is needed, **do not ask for permission to draft a prompt.** Just write it and present it. The user copies and sends — that's the only approval step.
+
+This applies to:
+- Dispatching idle polecats
+- Filing obvious beads (bugs, security findings, follow-on work)
+- Responding to patrol reports that have clear action items
+- Re-filing lost beads
+
+**Pattern:** Patrol report arrives → assess → draft Mayor prompt → present it. No "want me to write a prompt?" loop.
+
+---
+
 ## What NOT to Do
 
 - Do not use GitHub Issues or any other issue tracker — Beads is canonical
