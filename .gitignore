@@ -34,3 +34,6 @@ logs/
 
 # Large binary results (add project-specific paths below)
 # results/screenshots/
+
+# OMO worktrees (created adjacent to the repo)
+../*-omo-*

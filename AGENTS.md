@@ -255,3 +255,175 @@ Available via MCP from any tool that supports MCP servers. This is the shared kn
 ```
 
 **For OpenCode / KiloCode CLI:** See tool-specific sections above.
+
+---
+
+# Workflow Architecture
+
+This project uses a **two-workflows-plus-default** routing model. Before
+starting non-trivial work, route it. The router lives at
+`.claude/skills/route/SKILL.md`.
+
+## The three modes
+
+### Default mode
+Open Claude, do the thing. No bead, no capture, no ceremony.
+
+**Use for:** one-off questions, lookups, config tweaks under 5 min,
+exploratory pokes where you don't yet know what you're looking for.
+
+**Trigger:** if you've been in default mode for 20 minutes without an
+active bead, the shell watchdog fires a notification asking you to route.
+Either dismiss (genuinely default mode) or stop and run `route` to
+migrate to OMO with what you've already done as initial context.
+
+### OMO (single-agent serial work)
+Single-agent focused work that produces a discrete deliverable and a
+reasoning trace. Lightweight middle layer between raw Claude Code and
+Gas Town orchestration.
+
+**Use for:** feature builds, refactors, focused debugging with clear
+trace value, project-level work that doesn't parallelize.
+
+**Startup ritual:** see "OMO startup" below.
+
+### Gas Town (multi-agent orchestration)
+Parallel polecat work coordinated by Mayor through convoys. Used when
+the work splits into independent pieces OR when cross-agent coordination
+is the value.
+
+**Use for:** SaaS-scale parallel feature builds, multi-tier deployments
+where each tier is an independent unit, work with explicit dependency
+graphs.
+
+**Startup ritual:** see "Gas Town startup" below.
+
+## The router
+
+Before starting non-trivial work:
+
+```bash
+route "<one-line work description>"
+```
+
+The route skill asks 3-4 structured questions and outputs a
+recommendation: GAS_TOWN, OMO, or DEFAULT, with confidence level,
+reasoning, suggested bead title, and suggested system tags.
+
+Every invocation captures a `[ROUTE-DECISION]` thought to OpenBrain.
+At session end, the actual-outcome field gets updated — that data
+feeds the route skill's own Karpathy loop over time.
+
+**Skip routing for:** obviously-trivial work. Don't ceremonialize quick
+lookups.
+
+**Always route for:** anything you'd want a trace of, anything that
+might take more than 20 minutes, anything that might need a teammate
+or future-you to pick up.
+
+## OMO startup
+
+1. **Route the work.** `route "<description>"` → confirms OMO is appropriate, returns suggested bead title and tags.
+
+2. **Create and claim the bead.**
+   ```bash
+   bd create "<suggested bead title>" --tags "<suggested tags>"
+   bd start <bead-id>
+   ```
+
+3. **Create isolated worktree.**
+   ```bash
+   git worktree add ../<project>-omo-<bead-id> -b omo/<bead-id>
+   cd ../<project>-omo-<bead-id>
+   ```
+
+4. **Launch the agent.**
+   ```bash
+   omo run <persona> --bead <bead-id>
+   # OR for raw Claude Code:
+   claude
+   ```
+
+5. **Phase 1 — Session-start context load (agent does this).**
+   - Read active bead via `bd list --status in_progress`
+   - Search OpenBrain for prior `[OMO-BLOCKED]` and `[CHRONICLER-PATTERN]` captures matching the bead's tags
+   - Read suggested-next-action and continuity-hint fields if any prior session blocked on this work
+
+6. **Work the bead.** Standard discipline: bd update before significant actions, commit incrementally to the omo branch, capture `[OMO-CHECKPOINT]` thoughts at non-obvious decision points.
+
+7. **Phase 3 — Session-exit ritual (MANDATORY).** Before `bd close`, capture exactly one structured thought:
+   - On success: `[OMO-COMPLETE]` with approach-that-worked and approaches-discarded
+   - On BLOCKED: `[OMO-BLOCKED]` with what-attempted, where-stuck, failure-mode, suggested-next-action, continuity-hint, and confidence
+   - Then update the `[ROUTE-DECISION]` from step 1 with the actual-outcome field
+
+8. **Merge or discard.**
+   - Clean: `git merge omo/<bead-id>` to main, `bd close <bead-id>`, `git worktree remove ../<project>-omo-<bead-id>`
+   - BLOCKED: `bd update <bead-id> --status blocked`, leave worktree for next session resume
+
+## Gas Town startup
+
+1. **Route the work.** `route "<description>"` → confirms GAS_TOWN is appropriate, returns suggested bead title and tags.
+
+2. **Create the bead** (Mayor will pick it up).
+   ```bash
+   bd create "<suggested bead title>" --tags "<suggested tags>"
+   ```
+
+3. **Attach Mayor.**
+   ```bash
+   gtm  # alias for: gt mayor attach --agent claude-sonnet
+   ```
+
+4. **Mayor handles the rest.**
+   - Creates the convoy
+   - Dispatches polecats per the bead's parallelism
+   - Polecats work in their own worktrees
+   - Refinery merges completed work back via `mol-refinery-patrol`
+   - Witness monitors polecat health
+   - On BLOCKED escalation: Mayor receives the failure trace and re-dispatches with continuity hint (when Chronicler city_agent is built — see roadmap)
+
+5. **Phase 3 — Session-exit ritual** is handled per-polecat by `mol-polecat-work` formula gate (already enforced). Mayor-level captures fire via `precompact-capture.sh` hook and `openbrain-capture` step in `mol-mayor-patrol`.
+
+6. **Update `[ROUTE-DECISION]`** at the end of the convoy with actual-outcome.
+
+## Skill registry
+
+Skills live under `.claude/skills/` in this project. The bootstrap
+template provides:
+
+- `route/` — pre-flight workflow router (this skill)
+- `chronicler/` — capture format definitions and OpenBrain protocol *(when built)*
+
+Superpowers enforcement skills (when built) will live in their own
+locations and call into `chronicler/` for format consistency.
+
+## OpenBrain capture conventions
+
+All workflow events capture to OpenBrain via the `open-brain` MCP
+(`capture_thought`). Format conventions:
+
+- **Bracketed type tag** at the start: `[OMO-COMPLETE]`, `[OMO-BLOCKED]`, `[OMO-CHECKPOINT]`, `[ROUTE-DECISION]`, `[CHRONICLER-PATTERN]`, etc.
+- **One capture per event** — don't batch
+- **SEARCH TAGS line** at the end with comma-separated tags for retrieval
+- **Two-capture pattern** for major decisions: separate `[DECISION]` (the WHY) from `[REFERENCE]` (the HOW)
+
+## What's NOT in version control
+
+- The unrouted-session shell watchdog (lives in your dotfiles, not here)
+- Your personal `~/.claude.json` MCP config (per-machine)
+- Worktree directories (`../*-omo-*` paths — already in `.gitignore`)
+
+## Roadmap (workflow architecture)
+
+These are not yet implemented but are referenced in the architecture:
+
+- `session-start-context-load` Superpowers skill (currently agents do Phase 1 manually)
+- `decision-checkpoint-capture` Superpowers skill (currently agents do mid-session captures manually)
+- `session-exit-reflect` Superpowers skill (currently agents do Phase 3 manually)
+- Chronicler skill defining capture formats (currently formats live in this AGENTS.md)
+- Chronicler city_agent for Gas Town (replaces manual Mayor capture discipline)
+- Beads-heartbeat watcher (replaces shell-only unrouted-session watchdog)
+
+Until these are built, the workflow architecture relies on agent
+discipline plus AGENTS.md enforcement — same model as Mayor today.
+Acceptable for v1.0; harden incrementally.
